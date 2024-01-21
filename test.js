@@ -11,29 +11,44 @@
 // Использование TypeScript будет дополнительным плюсом.
 // Удачи!
 
-function Car(name) {
-  this.name = name;
-  this._distancePassed = 0;
-  this.driveHistory = [];
-  this.beep = function (message) {
-    console.log(this.name + ": " + "Beeeeep!" + (message ? " " : "") + message);
+// сделам класс car для использования модификаторов прав доступа и защитим историю и пробег от редактирования
+class Car { 
+  name;
+  #distancePassed = 0;
+  #driveHistory = [];
+
+  constructor(name) {
+    this.name = name;
+  }
+  
+  get distancePassed() {
+    return this.#distancePassed;
+  }
+  get driveHistory() {
+    return this.#driveHistory;
+  }
+
+  beep = function (message) {
+    console.log(this.name + ": " + "Beeeeep!" + (message ? " "  + message : ""));   
+    //логичнее выглядит прибавлять строку сообщения только в случае истинности условия
   };
-  this.drive = function (distance) {
+  
+  drive = function (distance) {
     this.beep();
-    this._distancePassed += distance;
+    this.#distancePassed += distance;
     let that = this;
-    this.driveHistory.push(function () {
+    this.#driveHistory.push(function () {
       return {
         time: new Date().getTime(),
         currentDistance: distance,
-        overallDistance: that._distancePassed,
+        overallDistance: that.#distancePassed,
       };
     });
     console.log(
       "Done. Kilometers passed: " +
         distance +
         ". Overall: " +
-        this._distancePassed
+        this.#distancePassed
     );
   };
 }
@@ -52,32 +67,15 @@ var hacker = {
         return item;
       });
     }
-    car.driveHistory = hackedHistory;
+    try {
+      car.driveHistory = hackedHistory;      
+    } catch (err) {
+      console.log("Warning! Somebody is trying to hack car's history!! Car's drive history is protected and can't be change!");
+    }
     return car;
   },
 };
-var owner = {
-  sellCar: function () {
-    var customer = getCustomer();
-    if (customer.buyCar(this.car)) {
-      console.log("Yay, I'm happy! I sold my old car!");
-    } else {
-      console.log("Aha. Let's hack this car and try to sell it again.");
-      this.car = hacker.hackCar(this.car);
-      this.sellCar();
-    }
-  },
-  useCar: function () {
-    this.car.drive(18000);
-    this.car.drive(22500);
-    this.car.drive(98118);
-    console.log("Enough. I want to sell this car.");
-    this.sellCar();
-  },
-};
-var superCar = new Car("Supercar");
-owner.car = superCar;
-owner.useCar();
+//функция getCustomer должна быть описана до owner, который ее вызывает
 var getCustomer = function () {
   var customer = {
     buyCar: function (car) {
@@ -97,3 +95,31 @@ var getCustomer = function () {
   };
   return customer;
 };
+var owner = {
+  sellCar: function () {
+    var customer = getCustomer();
+    if (customer.buyCar(this.car)) {
+      console.log("Yay, I'm happy! I sold my old car!");
+    } else {
+      console.log("Aha. Let's hack this car and try to sell it again.");      
+      let hackedCar = hacker.hackCar(this.car);
+      if (hackedCar.distancePassed < this.car.distancePassed) { // check if car is successfuly hacked
+        this.car = hackedCar;
+        this.sellCar();
+      } else {        
+        console.log("I can't hack this car! (( ");      
+      }
+    }
+  },
+  useCar: function () {
+    this.car.drive(18000);
+    this.car.drive(22500);
+    this.car.drive(98118);
+    console.log("Enough. I want to sell this car.");
+    this.sellCar();
+  },
+};
+var superCar = new Car("Supercar");
+owner.car = superCar;
+owner.useCar();
+
