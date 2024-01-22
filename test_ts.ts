@@ -10,103 +10,106 @@
 // почему были сделаны те или иные изменения (в виде комментариев).
 // Использование TypeScript будет дополнительным плюсом.
 // Удачи!
- 
+
+// Решение задачи с использованием TypeScript 
+
+interface HistoryRecord {
+    time: number;
+    currentDistance: number;
+    overallDistance: number;
+  }
+  
 // сделам класс car для использования модификаторов прав доступа и защитим историю и пробег от редактирования
 class Car { 
-  name;
-  #distancePassed = 0;
-  #driveHistory = [];
+  private name: string;
+  private distancePassed: number = 0;
+  private driveHistory: HistoryRecord [] = [];
 
-  constructor(name) {
+  constructor(name: string) {
     this.name = name;
   }
-  
-  get distancePassed() {
-    return this.#distancePassed;
+
+  public getDistancePassed() : number {
+    return this.distancePassed;
   }
-  get driveHistory() {
-    return this.#driveHistory;
+  
+  public getDriveHistory() : HistoryRecord [] {
+    return this.driveHistory;
   }
 
-  beep = function (message) {
+  public beep(message?: string): void {
     console.log(this.name + ": " + "Beeeeep!" + (message ? " "  + message : ""));   
-    //логичнее выглядит прибавлять строку сообщения только в случае истинности условия
-  };
+  }
   
-  drive = function (distance) {
+  public drive(distance: number): void {
     this.beep();
-    if (distance <=0) { // предотвращаем возможность ввода отрицательного значения для уменьшения пробега
+    if (distance <= 0) {
       console.log("Incorrect value. Distance can't be equal zero or negative value");
       return;
     }
-    this.#distancePassed += distance;
-    let distancePassed = this.#distancePassed;
-    this.#driveHistory.push(function () {
-      return {
-        time: new Date().getTime(),
-        currentDistance: distance,
-        overallDistance: distancePassed
-      };
+    this.distancePassed += distance;
+    this.driveHistory.push({
+      time: new Date().getTime(),
+      currentDistance: distance,
+      overallDistance: this.distancePassed,
     });
     console.log(
       "Done. Kilometers passed: " +
         distance +
         ". Overall: " +
-        this.#distancePassed
+        this.distancePassed
     );
-  };
+  }
 }
-var hacker = {
-  hackCar: function (car) {
-    var hackedHistory = [];
+
+interface Hacker {
+  hackCar(car: Car): Car;
+  hackCar2(car: Car): Car;
+}
+
+const hacker: Hacker = {
+  hackCar(car: Car): Car {
+    const hackedHistory: (() => HistoryRecord)[] = [];
     let ctr = 0;
-    for (var i = 0; i < car.driveHistory.length; i++) {
-      var historyRecord = car.driveHistory[i]();
-      hackedHistory.push(function () {
-        let item = {
+    const driveHistory = car.getDriveHistory();
+    for (let i = 0; i < driveHistory.length; i++) {
+      const historyRecord = driveHistory[i];
+      hackedHistory.push(() => {
+        let item: HistoryRecord = {
           time: historyRecord.time,
           currentDistance: 100,
-          overallDistance: 100 * ++ctr
+          overallDistance: 100 * ++ctr,
         };
         return item;
       });
     }
-    try {
+    // хакер здесь не имеет возможности переписать историю поездок авто
+    /*try {
       car.driveHistory = hackedHistory;      
     } catch (err) {
       console.log("Warning! Somebody is trying to hack car's history!! Car's drive history is protected and can't be change.");
-    }
+    }*/
     return car;
   },
-  hackCar2: function (car) {
-    // попробуем уменьшить пробег другим способом
-    let distance = Math.floor(car.distancePassed / 2);
+  hackCar2(car: Car): Car {
+    let distance = Math.floor(car.getDistancePassed() / 2);
     car.drive(-distance);
     return car;
   }    
 };
-//функция getCustomer должна быть описана до owner, который ее вызывает
-var getCustomer = function () {
-  var customer = {
-    buyCar: function (car) {
-      var summ = 0;
 
-      // Не понятно значение суммы которую считает покупатель и на основании которой принимается решение
-      //for (var i = 0; i < car.driveHistory.length; i++) {
-      //  var historyRecord = car.driveHistory[i]();
-      //  summ += historyRecord.overallDistance - historyRecord.currentDistance;
-      //}
+interface Customer {
+  buyCar(car: Car): boolean;
+}
 
-      // Обычно это общий пробег (car.distancePassed или overallDistance у последней записи в истории)
-      // или можно его вычислить как сумму всех расстояний из истории - если покупатель дотошный и таким образом проверяет что значение пробега верное
-      for (var i = 0; i < car.driveHistory.length; i++) {
-        var historyRecord = car.driveHistory[i]();
+const getCustomer = function (): Customer {
+  const customer: Customer = {
+    buyCar(car: Car): boolean {
+      let summ = 0;
+      const driveHistory = car.getDriveHistory();
+      for (let i = 0; i < driveHistory.length; i++) {
+        const historyRecord = driveHistory[i];
         summ += historyRecord.currentDistance;
-      }
-      if (summ != car.distancePassed) {
-        // проверим, что данные о пробеге совпадают
-        console.log("Overall distance is incorrect! You cheat me! I don't want to buy a car");
-        return false;    
       }
       if (summ > 100000) {
         console.log("I don't want to buy an old car");
@@ -115,24 +118,32 @@ var getCustomer = function () {
         console.log("OK! I like your car. I buy it.");
         return true;
       }
-    }
+    },
   };
   return customer;
 };
-var owner = {
-  sellCar: function () {
-    var customer = getCustomer();
+
+interface Owner {
+  car: Car;
+  sellCar(): void;
+  useCar(): void;
+}
+
+const owner: Owner = {
+  car: new Car(""),
+  sellCar(): void {
+    const customer = getCustomer();
     if (customer.buyCar(this.car)) {
       console.log("Yay, I'm happy! I sold my old car!");
     } else {
       console.log("Aha. Let's hack this car and try to sell it again.");      
-      let origDistance = this.car.distancePassed;
+      let origDistance = this.car.getDistancePassed();
       this.car = hacker.hackCar(this.car);
-      if (this.car.distancePassed < origDistance) { // check car is successfuly hacked
+      if (this.car.getDistancePassed() < origDistance) {
         this.sellCar(); 
       } else {       
         this.car = hacker.hackCar2(this.car); 
-        if (this.car.distancePassed < origDistance) { // check car is successfuly hacked
+        if (this.car.getDistancePassed() < origDistance) {
           this.sellCar();
         } else {
           console.log("Hacker can't hack this car! (( ");    
@@ -140,15 +151,15 @@ var owner = {
       }
     }
   },
-  useCar: function () {
+  useCar(): void {
     this.car.drive(18000);
     this.car.drive(22500);
     this.car.drive(98118);
     console.log("Enough. I want to sell this car.");
     this.sellCar(); 
-  }
+  },
 };
-var superCar = new Car("Supercar");
+
+const superCar = new Car("Supercar");
 owner.car = superCar;
 owner.useCar();
-
