@@ -10,7 +10,7 @@
 // почему были сделаны те или иные изменения (в виде комментариев).
 // Использование TypeScript будет дополнительным плюсом.
 // Удачи!
-
+ 
 // сделам класс car для использования модификаторов прав доступа и защитим историю и пробег от редактирования
 class Car { 
   name;
@@ -35,6 +35,10 @@ class Car {
   
   drive = function (distance) {
     this.beep();
+    if (distance <=0) { // предотвращаем возможность ввода отрицательного значения для уменьшения пробега
+      console.log("Incorrect value. Distance can't be equal zero or negative value");
+      return;
+    }
     this.#distancePassed += distance;
     let that = this;
     this.#driveHistory.push(function () {
@@ -70,10 +74,16 @@ var hacker = {
     try {
       car.driveHistory = hackedHistory;      
     } catch (err) {
-      console.log("Warning! Somebody is trying to hack car's history!! Car's drive history is protected and can't be change!");
+      console.log("Warning! Somebody is trying to hack car's history!! Car's drive history is protected and can't be change.");
     }
     return car;
   },
+  hackCar2: function (car) {
+    // попробуем уменьшить пробег другим способом
+    let distance = Math.floor(car.distancePassed / 2);
+    car.drive(-distance);
+    return car;
+  }    
 };
 //функция getCustomer должна быть описана до owner, который ее вызывает
 var getCustomer = function () {
@@ -102,12 +112,17 @@ var owner = {
       console.log("Yay, I'm happy! I sold my old car!");
     } else {
       console.log("Aha. Let's hack this car and try to sell it again.");      
-      let hackedCar = hacker.hackCar(this.car);
-      if (hackedCar.distancePassed < this.car.distancePassed) { // check if car is successfuly hacked
-        this.car = hackedCar;
-        this.sellCar();
-      } else {        
-        console.log("I can't hack this car! (( ");      
+      let origDistance = this.car.distancePassed;
+      this.car = hacker.hackCar(this.car);
+      if (this.car.distancePassed < origDistance) { // check car is successfuly hacked
+        this.sellCar(); 
+      } else {       
+        this.car = hacker.hackCar2(this.car); 
+        if (this.car.distancePassed < origDistance) { // check car is successfuly hacked
+          this.sellCar();
+        } else {
+          console.log("Hacker can't hack this car! (( ");    
+        }  
       }
     }
   },
@@ -116,7 +131,7 @@ var owner = {
     this.car.drive(22500);
     this.car.drive(98118);
     console.log("Enough. I want to sell this car.");
-    this.sellCar();
+    this.sellCar(); 
   },
 };
 var superCar = new Car("Supercar");
